@@ -22,6 +22,19 @@ col 14 :"Uncertainty"
 #######"""
 
 def extraction_data(path, col, name_col, pix_2_mm_fact = 89 / 2352,header=5, footer=34, is_display=False):
+    """ Extract data from a .dat file and return X, Y coordinates and values from the specified column.
+    path : path to the .dat file
+    col : column index to extract (0-based)
+    name_col : name of the column to display
+    pix_2_mm_fact : factor to convert pixels to mm (default is 89/2352)
+    header : number of header lines to skip (default is 5)
+    footer : number of footer lines to skip (default is 34)
+    is_display : if True, display the field using a scatter plot
+    Returns 
+    X : 2D array of X coordinates
+    Y : 2D array of Y coordinates
+    Val : 2D array of values
+    """
     with open(path, "r") as file:
         lines = file.readlines()
         data = [ligne.strip().split() for ligne in lines]
@@ -44,7 +57,36 @@ def extraction_data(path, col, name_col, pix_2_mm_fact = 89 / 2352,header=5, foo
         plt.savefig(f"{path}-{name_col}-fig.png", dpi=300)
         plt.ylabel("Y (mm)")
         plt.show()
+    # Transform Val into a 2D array based on unique X and Y values
+    len_X = len(np.unique(X))
+    len_Y = len(X) // len_X
+
+    X = X.reshape((len_Y, len_X))
+    Y = Y.reshape((len_Y, len_X))
+    Val = np.array(Val).reshape((len_Y, len_X))
     return X, Y, Val 
 
-first_img_path = "try_2000000002.dat"
-extraction_data(first_img_path, 13, "Flag first image", is_display=True)
+def plot_field_X_Y_Val(X, Y, Val, name_col, path_save=None):
+    """ Plot a field given X, Y coordinates and corresponding values Val. 
+    X : 2D array of X coordinates
+    Y : 2D array of Y coordinates
+    Val : 2D array of values to plot
+    name_col : name of the field to display
+    path_save : if not None, save the figure to this path
+    """
+    plt.figure(figsize=(8, 6))
+    sc = plt.scatter(X, Y, c=Val, cmap='viridis')
+    plt.colorbar(sc, label=f" {name_col}")
+    plt.xlabel("X (mm)")
+    if path_save is not None:
+        plt.savefig(f"{path_save}-{name_col}-fig.png", dpi=300)
+    plt.ylabel("Y (mm)")
+    plt.show()
+
+
+# Example usage:
+"""
+first_img_path = "PIV-04-07-25_img_1.dat"
+X, Y, Speed = extraction_data(first_img_path, 13, "Speed first image", is_display=False)
+plot_field_X_Y_Val(X, Y, Speed, "Speed first image", path_save="PIV-04-07-25_img_1-Speed")
+"""
